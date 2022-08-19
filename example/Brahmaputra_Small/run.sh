@@ -10,4 +10,4 @@ end="06-30"     # Month-Day format with leading 0s
 out="/home/greenberg/Code/Github/PullWaterMask/example/Bramaputra_Small"
 river="Bramaputra_Small"
 
-python ../PullWaterMask/main.py --poly $poly --mask_method $mask_method --network_method $network_method --network_path $network_path --masks $masks --images $images --start $start --end $end --out $out --river $river
+python ../GEE_watermasks/main.py --poly $poly --mask_method $mask_method --network_method $network_method --network_path $network_path --masks $masks --images $images --start $start --end $end --out $out --river $river
