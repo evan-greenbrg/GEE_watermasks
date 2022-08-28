@@ -15,8 +15,8 @@ from ee_datasets import get_image
 from puller_helpers import get_polygon
 
 
-def get_MERIT_features(polygon_path, root, merit_path):
-    polys = get_polygon(polygon_path, root)
+def get_MERIT_features(polygon_path, root, merit_path, dataset):
+    polys = get_polygon(polygon_path, root, dataset)
 
     network_features = []
     for i, poly in enumerate(polys):
@@ -117,7 +117,7 @@ def get_river_largest(water):
     return cc.astype(int)
 
 
-def get_grwl_features(polygon_path, out_root, remove=True):
+def get_grwl_features(polygon_path, out_root, dataset, remove=True):
     polygon_name = polygon_path.split('/')[-1].split('.')[0]
     with fiona.open(polygon_path, layer=polygon_name) as layer:
         for feature in layer:

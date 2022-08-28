@@ -1,3 +1,4 @@
+from datetime import datetime
 import glob
 import time
 import os
@@ -33,10 +34,10 @@ MONTHS = ['01', '02', '03', '04', '05', '06', '07', '08',
           '09', '10', '11', '12']
 
 
-def pull_esa(polygon_path, root, river, start, end):
+def pull_esa(polygon_path, root, river, start, end, dataset='landsat'):
 
-    years = [i for i in range(1985, 2020)]
-    polys = get_polygon(polygon_path, root)
+    years = [i for i in range(1985, datetime.now().year + 1)]
+    polys = get_polygon(polygon_path, root, dataset)
 
     print()
     print(river)
@@ -117,16 +118,22 @@ def pull_year_ESA(year, poly, root, name, chunk_i, start, end):
     return out
 
 
-def pull_year_image(year, poly, root, name, chunk_i, start, end):
+def pull_year_image(year, poly, root, name, chunk_i, start, end, dataset):
     # See if pausing helpds with the time outs
     time.sleep(6)
+
+    # Get image resolution
+    if dataset == 'landsat':
+        reso = 30
+    elif dataset =='sentinel':
+        reso = 10
 
     out_path = os.path.join(
         root,
         str(year),
         '{}_{}_{}.tif'
     )
-    image = get_image_period(year, start, end, poly)
+    image = get_image_period(year, start, end, poly, dataset)
 
     if not image.bandNames().getInfo():
         return None
@@ -140,15 +147,15 @@ def pull_year_image(year, poly, root, name, chunk_i, start, end):
     _ = ee_export_image(
         image,
         filename=out,
-        scale=30,
+        scale=reso,
         file_per_band=False
     )
 
     return out
 
 
-def create_mask(paths, polygon_path, root, river, start, end,
-                mask_method='Jones', network_method='grwl', merit_path=None):
+def create_mask(paths, polygon_path, root, river, start, end, dataset,
+                mask_method='Jones', network_method='grwl', network_path=None):
 
     # Set up file writing roots
     out_root = os.path.join(
@@ -166,13 +173,15 @@ def create_mask(paths, polygon_path, root, river, start, end,
     if network_method == 'grwl':
         network = get_grwl_features(
             polygon_path,
-            os.path.join(root, river)
+            os.path.join(root, river),
+            dataset
         )
     elif network_method == 'merit':
         network = get_MERIT_features(
             polygon_path,
             root,
-            merit_path
+            network_path,
+            dataset
         )
 
     for year, path in paths.items():
@@ -220,11 +229,18 @@ def create_mask(paths, polygon_path, root, river, start, end,
     return out
 
 
-def pull_images(polygon_path, root, river, start, end):
+def pull_images(polygon_path, root, river, start, end, dataset):
 
-    years = [i for i in range(1985, 2020)]
-    polys = get_polygon(polygon_path, root)
+    # Make check to see if start date is included
 
+
+    if dataset == 'landsat':
+        years = [i for i in range(1985, datetime.now().year + 1)]
+    elif dataset == 'sentinel':
+        years = [i for i in range(2017, datetime.now().year + 1)]
+
+    polys = get_polygon(polygon_path, root, dataset)
+    print(polys)
     # Pull the images
     year_root = os.path.join(root, river)
     os.makedirs(year_root, exist_ok=True)
@@ -242,7 +258,7 @@ def pull_images(polygon_path, root, river, start, end):
                 pull_year_image,
                 (
                     year, poly, year_root, river, poly_i,
-                    start, end
+                    start, end, dataset
                 )
             ))
     multiprocess(tasks)

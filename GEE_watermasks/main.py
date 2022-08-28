@@ -11,6 +11,7 @@ from puller import get_paths
 
 ee.Initialize()
 
+
 if __name__ == '__main__':
     if platform.system() == "Darwin":
         set_start_method('spawn')
@@ -40,6 +41,10 @@ if __name__ == '__main__':
                         choices=['true', 'false'],
                         help='Do you want to export images')
 
+    parser.add_argument('--dataset', metavar='dataset', type=str,
+                        choices=['landsat', 'sentinel'],
+                        help='what is the GEE data source')
+
     parser.add_argument('--start', metavar='start', type=str,
                         help='Start month-day in format: MO-DAY'
                         )
@@ -64,7 +69,8 @@ if __name__ == '__main__':
             args.out,
             args.river,
             args.start,
-            args.end
+            args.end,
+            args.dataset
         )
     else:
         paths = get_paths(args.poly, args.out, args.river)
@@ -79,9 +85,10 @@ if __name__ == '__main__':
                 args.river,
                 args.start,
                 args.end,
-                args.mask_method,
-                args.network_method,
-                args.network_path
+                args.dataset,
+                mask_method=args.mask_method,
+                network_method=args.network_method,
+                network_path=args.network_path
             )
         elif args.mask_method == 'esa':
             paths = pull_esa(
@@ -89,5 +96,5 @@ if __name__ == '__main__':
                 args.out,
                 args.river,
                 args.start,
-                args.end
+                args.end,
             )

@@ -23,6 +23,28 @@ def maskL8sr(image):
     return image.updateMask(mask)
 
 
+def maskSentinel(image):
+    cloudShadowBitMask = (1 << 10)
+    cloudsBitMask = (1 << 11)
+
+    qa = image.select('QA60')
+
+    mask = qa.bitwiseAnd(cloudShadowBitMask).eq(0).And(
+        qa.bitwiseAnd(cloudsBitMask).eq(0)
+    )
+
+    return image.updateMask(mask)
+
+
+def getSentinelCollection():
+    bnSen = ['B2', 'B2', 'B3', 'B4', 'B11', 'QA60', 'B8', 'B12']
+    bns = ['uBlue', 'Blue', 'Green', 'Red', 'Swir1', 'QA60', 'Nir', 'Swir2']
+
+    sen = ee.ImageCollection("COPERNICUS/S2_SR_HARMONIZED").select(bnSen, bns)
+
+    return (sen)
+
+
 def getLandsatCollection():
     """
     merge landsat 5, 7, 8 collection 1
@@ -48,7 +70,7 @@ def getLandsatCollection():
     return(merged)
 
 
-def get_image(year, polygon):
+def get_image(year, polygon, dataset='landsat'):
     """
     Set up server-side image object
     """
@@ -57,33 +79,53 @@ def get_image(year, polygon):
     end = str(year) + '-12' + '-31'
 
     band_names = ['uBlue', 'Blue', 'Green', 'Red', 'Swir1', 'Nir', 'Swir2']
-    allLandsat = getLandsatCollection()
 
-    # Filter image collection by
-    return allLandsat.map(
-        maskL8sr
-    ).filterDate(
-        begin, end
-    ).median().clip(
-        polygon
-    ).select(band_names)
+    if dataset == 'landsat':
+        allLandsat = getLandsatCollection()
+        image = allLandsat.map(
+            maskL8sr
+        ).filterDate(
+            begin, end
+        ).median().clip(
+            polygon
+        ).select(band_names)
+    elif dataset == 'sentinel':
+        sentinel2 = getSentinelCollection()
+        image = sentinel2.map(
+            maskSentinel
+        ).filterDate(
+            begin, end
+        ).median().clip(
+            polygon
+        ).select(band_names)
+
+    return image
 
 
-def get_image_period(year, start, end, polygon):
+def get_image_period(year, start, end, polygon, dataset='landsat'):
     begin = str(year) + '-' + start
     end = str(year) + '-' + end
 
-    allLandsat = getLandsatCollection()
-
-    # Filter image collection by
     images = ee.List([])
-    images = images.add(allLandsat.map(
-        maskL8sr
-    ).filterDate(
-        begin, end
-    ).median().clip(
-        polygon
-    ))
+    if dataset == 'landsat':
+        allLandsat = getLandsatCollection()
+        images = images.add(allLandsat.map(
+            maskL8sr
+        ).filterDate(
+            begin, end
+        ).median().clip(
+            polygon
+        ))
+
+    elif dataset == 'sentinel':
+        sentinel2 = getSentinelCollection()
+        images = images.add(sentinel2.map(
+            maskSentinel 
+        ).filterDate(
+            begin, end
+        ).median().clip(
+            polygon
+        ))
 
     return ee.ImageCollection(
         images

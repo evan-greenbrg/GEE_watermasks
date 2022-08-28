@@ -52,12 +52,18 @@ def split_polygon(shape, nx, ny):
     return result
 
 
-def get_polygon(polygon_path, root, year=2018):
+def get_polygon(polygon_path, root, dataset='landsat', year=2018):
 
     out_path = os.path.join(
         root,
         '{}_{}_{}.tif'.format('temp', year, 'river')
     )
+
+    # Get image resolution
+    if dataset == 'landsat':
+        reso = 30
+    elif dataset == 'sentinel':
+        reso = 10
 
     # Load initial polygon
     polygon_name = polygon_path.split('/')[-1].split('.')[0]
@@ -68,9 +74,9 @@ def get_polygon(polygon_path, root, year=2018):
             poly_shape = Polygon(geom['coordinates'][0])
             poly = ee.Geometry.Polygon(geom['coordinates'])
 
-            image = get_image(year, poly)
+            image = get_image(year, poly, dataset)
 
-            params = request_params(out_path, 30, image)
+            params = request_params(out_path, reso, image)
 
             outcomes = []
             try:
@@ -98,8 +104,8 @@ def get_polygon(polygon_path, root, year=2018):
                     ).tolist()
                     poly = ee.Geometry.Polygon(coordinates)
 
-                    image = get_image(year, poly)
-                    params = request_params(out_path, 30, image)
+                    image = get_image(year, poly, dataset)
+                    params = request_params(out_path, reso, image)
 
                     try:
                         url = image.getDownloadURL(params)
