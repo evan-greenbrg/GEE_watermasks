@@ -45,6 +45,10 @@ if __name__ == '__main__':
                         choices=['landsat', 'sentinel'],
                         help='what is the GEE data source')
 
+    parser.add_argument('--water_level', metavar='water_level', type=str,
+                        choices=['1', '2', '3', '4'], default='2',
+                        help='Maximuim water uncertainty (4 being the lowest)')
+
     parser.add_argument('--start', metavar='start', type=str,
                         help='Start month-day in format: MO-DAY'
                         )
@@ -86,6 +90,7 @@ if __name__ == '__main__':
                 args.start,
                 args.end,
                 args.dataset,
+                args.water_level,
                 mask_method=args.mask_method,
                 network_method=args.network_method,
                 network_path=args.network_path

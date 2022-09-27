@@ -67,7 +67,15 @@ def get_water_Zou(ds):
     return water
 
 
-def get_water_Jones(ds):
+def get_water_Jones(ds, water_level):
+    """
+    Based on method from:
+    https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/media/files/LSDS-2084_LandsatC2_L3_DSWE_ADD-v1.pdf
+
+    Code edited from:
+    https://github.com/seanyx/RivWidthCloudPaper/blob/master/RivWidthCloud_Python/functions_waterClassification_Jones2019.py
+    """
+
     arr = np.empty((ds.shape[0], ds.shape[1], 9))
     arr[:, :, 0] = Mndwi(ds)    # mndwi
     arr[:, :, 1] = Mbsrv(ds)    # mbsrv
@@ -159,7 +167,8 @@ def get_water_Jones(ds):
         + (lWater * 4)
     )
 
-    return (
-        (iDswe == 1)
-        + (iDswe == 2)
-    )
+    mask = np.zeros(iDswe.shape).astype(bool)
+    for i in range(1, water_level + 1):
+        mask += (iDswe == i)
+
+    return mask 

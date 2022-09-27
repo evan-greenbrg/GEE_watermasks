@@ -154,7 +154,7 @@ def pull_year_image(year, poly, root, name, chunk_i, start, end, dataset):
     return out
 
 
-def create_mask(paths, polygon_path, root, river, start, end, dataset,
+def create_mask(paths, polygon_path, root, river, start, end, dataset, water_level,
                 mask_method='Jones', network_method='grwl', network_path=None):
 
     # Set up file writing roots
@@ -189,7 +189,7 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset,
         print(path)
         ds = rasterio.open(path)
         if mask_method == 'Jones':
-            water = get_water_Jones(ds).astype(int)
+            water = get_water_Jones(ds, int(water_level)).astype(int)
         elif mask_method == 'Zou':
             water = get_water_Zou(ds).astype(int)
 
