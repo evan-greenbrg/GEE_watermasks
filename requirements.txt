@@ -1,0 +1,10 @@
+earthengine_api==0.1.239
+Fiona==1.8.20
+geemap==0.8.16
+geopandas==0.6.1
+numpy==1.21
+rasterio==1.2.6
+requests==2.26.0
+scikit-image==0.19.3 
+Shapely==1.7.1
+pillow==8.3.2
