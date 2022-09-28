@@ -57,6 +57,14 @@ if __name__ == '__main__':
                         help='End month-day in format: MO-DAY'
                         )
 
+    parser.add_argument('--start_year', metavar='start_year', type=str,
+                        help='Start year'
+                        )
+
+    parser.add_argument('--end_year', metavar='end_year', type=str,
+                        help='End year'
+                        )
+
     parser.add_argument('--out', metavar='out', type=str,
                         help='output root directory')
 
@@ -74,6 +82,8 @@ if __name__ == '__main__':
             args.river,
             args.start,
             args.end,
+            int(args.start_year),
+            int(args.end_year),
             args.dataset
         )
     else:

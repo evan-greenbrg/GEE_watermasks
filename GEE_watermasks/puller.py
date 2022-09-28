@@ -5,9 +5,11 @@ import os
 import ee
 import re
 import geemap
+import numpy as np
 import rasterio
 import rasterio.mask
 import warnings
+from pyproj import CRS
 
 from watermask_methods import get_water_Jones
 from watermask_methods import get_water_Zou
@@ -22,6 +24,7 @@ from download import ee_export_image
 from puller_helpers import get_polygon
 from puller_helpers import mosaic_images
 from puller_helpers import apply_esa_threshold
+from puller_helpers import find_epsg 
 from multi import multiprocess
 
 
@@ -34,10 +37,16 @@ MONTHS = ['01', '02', '03', '04', '05', '06', '07', '08',
           '09', '10', '11', '12']
 
 
-def pull_esa(polygon_path, root, river, start, end, dataset='landsat'):
+def pull_esa(polygon_path, root, river, 
+             start, end, 
+             start_year, end_year, 
+             dataset='landsat'):
 
-    years = [i for i in range(1985, datetime.now().year + 1)]
+    years = np.arange(start_year, end_year + 1) 
     polys = get_polygon(polygon_path, root, dataset)
+
+    lon, lat = polys[0].getInfo()['coordinates'][0][0]
+    dst_crs = find_epsg(lat, lon)
 
     print()
     print(river)
@@ -57,7 +66,7 @@ def pull_esa(polygon_path, root, river, start, end, dataset='landsat'):
                 pull_year_ESA,
                 (
                     year, poly, year_root,
-                    river, i, start, end
+                    river, i, start, end, dst_crs
                 )
             ))
     multiprocess(tasks)
@@ -89,7 +98,7 @@ def pull_esa(polygon_path, root, river, start, end, dataset='landsat'):
     return out_paths
 
 
-def pull_year_ESA(year, poly, root, name, chunk_i, start, end):
+def pull_year_ESA(year, poly, root, name, chunk_i, start, end, dst_crs):
     time.sleep(6)
     out_path = os.path.join(
         root,
@@ -112,13 +121,15 @@ def pull_year_ESA(year, poly, root, name, chunk_i, start, end):
         image,
         filename=out,
         scale=30,
+        crs=dst_crs[0] + ':' + dst_crs[1],
         file_per_band=False
     )
 
     return out
 
 
-def pull_year_image(year, poly, root, name, chunk_i, start, end, dataset):
+def pull_year_image(year, poly, root, name, chunk_i, 
+                    start, end, dataset, dst_crs):
     # See if pausing helpds with the time outs
     time.sleep(6)
 
@@ -148,6 +159,7 @@ def pull_year_image(year, poly, root, name, chunk_i, start, end, dataset):
         image,
         filename=out,
         scale=reso,
+        crs=dst_crs[0] + ':' + dst_crs[1],
         file_per_band=False
     )
 
@@ -171,13 +183,13 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
     )
 
     if network_method == 'grwl':
-        network = get_grwl_features(
+        network, network_method = get_grwl_features(
             polygon_path,
             os.path.join(root, river),
             dataset
         )
     elif network_method == 'merit':
-        network = get_MERIT_features(
+        network, network_method = get_MERIT_features(
             polygon_path,
             root,
             network_path,
@@ -195,7 +207,7 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
 
         if network_method == 'grwl':
             river_im = get_river_GRWL(
-                water, ds.transform, network, out_root
+                water, ds.transform, ds.crs, network, out_root
             )
 
         elif network_method == 'merit':
@@ -229,18 +241,21 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
     return out
 
 
-def pull_images(polygon_path, root, river, start, end, dataset):
+def pull_images(polygon_path, root, river, 
+                start, end, 
+                start_year, end_year,
+                dataset):
 
-    # Make check to see if start date is included
-
-
-    if dataset == 'landsat':
-        years = [i for i in range(1985, datetime.now().year + 1)]
-    elif dataset == 'sentinel':
-        years = [i for i in range(2017, datetime.now().year + 1)]
-
+    if (start_year < 2017) and (dataset == 'sentinel'):
+        raise ValueError('Sentinel does not have data before 2017')
+    
+    years = np.arange(start_year, end_year + 1)
     polys = get_polygon(polygon_path, root, dataset)
-    print(polys)
+
+    # Get EPSG
+    lon, lat = polys[0].getInfo()['coordinates'][0][0]
+    dst_crs = find_epsg(lat, lon)
+
     # Pull the images
     year_root = os.path.join(root, river)
     os.makedirs(year_root, exist_ok=True)
@@ -258,7 +273,7 @@ def pull_images(polygon_path, root, river, start, end, dataset):
                 pull_year_image,
                 (
                     year, poly, year_root, river, poly_i,
-                    start, end, dataset
+                    start, end, dataset, dst_crs
                 )
             ))
     multiprocess(tasks)

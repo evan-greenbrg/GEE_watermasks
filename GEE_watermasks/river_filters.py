@@ -10,6 +10,7 @@ from skimage import measure
 from shapely.geometry import MultiLineString
 from shapely import ops
 from skimage.graph import MCP
+from pyproj import Proj, transform
 
 from ee_datasets import get_image
 from puller_helpers import get_polygon
@@ -18,7 +19,7 @@ from puller_helpers import get_polygon
 def get_MERIT_features(polygon_path, root, merit_path, dataset):
     polys = get_polygon(polygon_path, root, dataset)
 
-    network_features = []
+    network_features = geopandas.GeoDataFrame()
     for i, poly in enumerate(polys):
         print('Poly: ', i)
         geom = np.array(poly.getInfo()['coordinates'])[0, :, :]
@@ -35,10 +36,14 @@ def get_MERIT_features(polygon_path, root, merit_path, dataset):
 
         network_features.append(gdf)
 
-    return network_features
+        if not len(network_features):
+            print('No River network found. Exporting all water')
+            return None, None
+
+    return network_features, 'merit'
 
 
-def get_river_MERIT(water, transform, network):
+def get_river_MERIT(water, ds_transform, network):
 
     lines = []
     for i, feature in network.iterrows():
@@ -47,23 +52,35 @@ def get_river_MERIT(water, transform, network):
     if not lines:
         return []
 
+    inProj = Proj(init='epsg:4326')
+    outProj = Proj(crs)
     multi = ops.linemerge(MultiLineString(lines))
     rows = []
     cols = []
     if multi.geom_type == 'MultiLineString':
         for i, m in enumerate(multi):
+            # Reproject pixel coordinates
+            easting, northing = transform(
+                inProj, outProj, 
+                m.xy[0], m.xy[1]
+            )
+
             rs, cs = rasterio.transform.rowcol(
-                transform,
-                m.xy[0],
-                m.xy[1]
+                ds_transform,
+                easting,
+                northing 
             )
             rows += rs
             cols += cs
     elif multi.geom_type == 'LineString':
+        easting, northing = transform(
+            inProj, outProj, 
+            multi.xy[0], multi.xy[1]
+        )
         rs, cs = rasterio.transform.rowcol(
-            transform,
-            multi.xy[0],
-            multi.xy[1]
+            ds_transform,
+            easting,
+            northing 
         )
         rows += rs
         cols += cs
@@ -138,7 +155,11 @@ def get_grwl_features(polygon_path, out_root, dataset, remove=True):
     cl = grwl.filterBounds(bound)
 
     # Export this potentially large subset of points
-    geemap.ee_export_vector(cl, out_json)
+    try:
+        geemap.ee_export_vector(cl, out_json)
+    except ee.EEException as e:
+        print('No Features to Export. Exporting all water')
+        return None, None
 
     # Pull the geometry
     df = geopandas.read_file(out_json)
@@ -148,19 +169,27 @@ def get_grwl_features(polygon_path, out_root, dataset, remove=True):
     if remove:
         os.remove(out_json)
 
-    return ops.linemerge(MultiLineString(lines))
+    return ops.linemerge(MultiLineString(lines)), 'grwl'
 
 
-def get_river_GRWL(water, transform, multi, out_root):
+def get_river_GRWL(water, ds_transform, crs, multi, out_root):
 
+    inProj = Proj(init='epsg:4326')
+    outProj = Proj(crs)
     rows = []
     cols = []
     if multi.geom_type == 'MultiLineString':
         for i, m in enumerate(multi):
+            # Reproject pixel coordinates
+            easting, northing = transform(
+                inProj, outProj, 
+                m.xy[0], m.xy[1]
+            )
+
             rs, cs = rasterio.transform.rowcol(
-                transform,
-                m.xy[0],
-                m.xy[1]
+                ds_transform,
+                easting,
+                northing 
             )
 
             if rs[0] < 0:
@@ -172,10 +201,15 @@ def get_river_GRWL(water, transform, multi, out_root):
             cols += cs
 
     elif multi.geom_type == 'LineString':
+        # Reproject pixel coordinates
+        easting, northing = transform(
+            inProj, outProj, 
+            multi.xy[0], multi.xy[1]
+        )
         rs, cs = rasterio.transform.rowcol(
-            transform,
-            multi.xy[0],
-            multi.xy[1]
+            ds_transform,
+            easting,
+            northing 
         )
         rows += rs
         cols += cs
@@ -211,4 +245,5 @@ def get_river_GRWL(water, transform, multi, out_root):
         cl_points,
         max_cumulative_cost=30
     )
+
     return (cost_array == 0).astype(int)

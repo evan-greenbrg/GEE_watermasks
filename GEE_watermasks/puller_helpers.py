@@ -10,6 +10,7 @@ from shapely.ops import split
 import rasterio.mask
 from rasterio.merge import merge
 import numpy as np
+from pyproj import CRS
 import warnings
 
 from ee_datasets import get_image
@@ -194,3 +195,45 @@ def apply_esa_threshold(path, thresh=2):
         dest.write(mask)
 
     return path
+
+
+def find_epsg(lat, long):
+    '''
+    Based on: https://stackoverflow.com/questions/9186496/determining-utm-zone-to-convert-from-longitude-latitude
+    '''
+
+    # Svalbard
+    if (lat >= 72.0) and (lat <= 84.0):
+        if (long >= 0.0)  and (long<  9.0):
+            utm_number = 31
+        if (long >= 9.0)  and (long < 21.0):
+            utm_number = 33
+        if (long >= 21.0) and (long < 33.0):
+            utm_number = 35
+        if (long >= 33.0) and (long < 42.0):
+            utm_number = 37
+    
+    # Special zones for Norway
+    elif (lat >= 56.0) and (lat < 64.0):
+        if (long >= 0.0)  and (long <  3.0):
+            utm_number = 31
+        if (long >= 3.0)  and (long < 12.0):
+            utm_number = 32
+
+    if (lat > -80.0) and (lat <= 84.0):
+        utm_number = int((np.floor((long + 180) / 6) % 60) + 1)
+
+    if lat > 0:
+        utm_letter = False
+    else:
+        utm_letter = True
+
+    utm_zone = str(utm_number) + str(utm_letter)
+    
+    crs = CRS.from_dict({
+        'proj': 'utm',
+        'zone': utm_number,
+        'south': utm_letter
+    })
+
+    return crs.to_authority()
