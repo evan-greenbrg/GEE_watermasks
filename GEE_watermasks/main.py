@@ -9,12 +9,58 @@ from puller import pull_esa
 from puller import get_paths
 
 
-ee.Initialize()
+def main(poly, masks, images, dataset, water_level,
+         mask_method, network_method, network_path,
+         start, end, start_year, end_year, out, river):
 
+    export_images = False
+    if images == 'true':
+        print("Pulling Images")
+        paths = pull_images(
+            poly,
+            out,
+            river,
+            start,
+            end,
+            int(start_year),
+            int(end_year),
+            dataset
+        )
+    else:
+        paths = get_paths(poly, out, river)
+
+    if masks == 'true':
+        print("Creating Mask")
+        if (mask_method == 'Jones') or (mask_method == 'Zou'):
+            paths = create_mask(
+                paths,
+                poly,
+                out,
+                river,
+                start,
+                end,
+                dataset,
+                water_level,
+                mask_method=mask_method,
+                network_method=network_method,
+                network_path=network_path
+            )
+        elif mask_method == 'esa':
+            paths = pull_esa(
+                poly,
+                out,
+                river,
+                start,
+                end,
+            )
+
+    return True
 
 if __name__ == '__main__':
     if platform.system() == "Darwin":
         set_start_method('spawn')
+
+    ee.Initialize()
 
     parser = argparse.ArgumentParser(description='Pull Mobility')
     parser.add_argument('--poly', metavar='poly', type=str,
@@ -73,43 +119,19 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    export_images = False
-    if args.images == 'true':
-        print("Pulling Images")
-        paths = pull_images(
-            args.poly,
-            args.out,
-            args.river,
-            args.start,
-            args.end,
-            int(args.start_year),
-            int(args.end_year),
-            args.dataset
-        )
-    else:
-        paths = get_paths(args.poly, args.out, args.river)
-
-    if args.masks == 'true':
-        print("Creating Mask")
-        if (args.mask_method == 'Jones') or (args.mask_method == 'Zou'):
-            paths = create_mask(
-                paths,
-                args.poly,
-                args.out,
-                args.river,
-                args.start,
-                args.end,
-                args.dataset,
-                args.water_level,
-                mask_method=args.mask_method,
-                network_method=args.network_method,
-                network_path=args.network_path
-            )
-        elif args.mask_method == 'esa':
-            paths = pull_esa(
-                args.poly,
-                args.out,
-                args.river,
-                args.start,
-                args.end,
-            )
+    main(
+        args.poly, 
+        args.masks, 
+        args.images, 
+        args.dataset,
+        args.water_level, 
+        args.mask_method, 
+        args.network_method,
+        args.network_path,
+        args.start, 
+        args.end, 
+        args.start_year, 
+        args.end_year, 
+        args.out, 
+        args.river
+    )
