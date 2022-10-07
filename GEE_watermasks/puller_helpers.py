@@ -143,6 +143,7 @@ def mosaic_images(year_root, year, river, pattern, start, end):
         mosaics.append(ds)
     meta = ds.meta.copy()
     mosaic, out_trans = merge(mosaics)
+    ds.close()
 
     # Update the metadata
     meta.update({
