@@ -307,7 +307,7 @@ def get_paths(poly, root, river):
 
     out_paths = {}
     for fp in fps:
-        year = re.findall(r"_[0-9]{4}_", fp)[-1]
+        year = re.findall(r"_[0-9]{4}_", fp)[-1].strip('_')
         out_paths[year] = fp
 
     return out_paths
