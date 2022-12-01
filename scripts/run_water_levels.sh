@@ -11,8 +11,8 @@ do
     echo $value
     echo $im
 
-    river='Ucayali_Methods'
-    poly="/Users/greenberg/Documents/PHD/Writing/Mobility_Proposal/Figure2/Shapes/$river.gpkg"
+    river='Araguaia'
+    poly="/Users/greenberg/Documents/PHD/Projects/Mobility/MethodsPaper/RiverData/Meandering/shapes/$river.gpkg"
     mask_method="Jones"     # Jones, Zou, esa
     dataset='landsat'      # landsat, sentinel
     network_method='grwl'   # grwl, merit, largest, all
@@ -22,15 +22,14 @@ do
     water_level="$value"
     start="01-01"   # Month-Day format with leading 0s
     end="12-31"     # Month-Day format with leading 0s
-    start_year="2019"   
-    end_year="2019"     
-    out="/Users/greenberg/Documents/PHD/Projects/Mobility/MethodsPaper/test"
+    start_year="1985"
+    end_year="2021"     
+    out="/Volumes/Samsung_T5/Mac/PhD/Projects/Mobility/MethodsPaper/RiverData/MeanderingRivers/Data"
 
     python ../GEE_watermasks/main.py --poly $poly --mask_method $mask_method --network_method $network_method --network_path $network_path --masks $masks --images $images --dataset $dataset --water_level $water_level --start $start --end $end --start_year $start_year --end_year $end_year --out $out --river $river
 
-    echo "$out/$river/mask"
-    echo "$out/$river/mask$water_level"
-
-    mv "$out/$river/mask" "$out/$river/WaterLevel$water_level"
-
+    echo "$out/$river/WaterLevel$water_level"
+    mkdir "$out/$river/WaterLevel$water_level"
+    mv -v $out/$river/mask $out/$river/WaterLevel$water_level
+    # rm -rf $out/$river/mask
 done
