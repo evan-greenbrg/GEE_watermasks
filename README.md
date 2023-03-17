@@ -44,16 +44,16 @@ Parameters include:
 * out - root to export all images and masks to
 
 Example:
-river='Indus'
-poly="/Shapes/$river.gpkg"
-mask_method="Jones"
-dataset='landsat'
-network_method="grwl"
-images="true"
-masks="true"
-water_level="2"
-start="01-01"
-end="12-31"
-start_year="2021"   
-end_year="2021"     
-out="Figures/Indus"
+river='Indus'\
+poly="/Shapes/$river.gpkg"\
+mask_method="Jones"\
+dataset='landsat'\
+network_method="grwl"\
+images="true"\
+masks="true"\
+water_level="2"\
+start="01-01"\
+end="12-31"\
+start_year="2021"\
+end_year="2021"\  
+out="Figures/Indus"\
