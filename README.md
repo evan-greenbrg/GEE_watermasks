@@ -55,5 +55,5 @@ water_level="2"\
 start="01-01"\
 end="12-31"\
 start_year="2021"\
-end_year="2021"\  
-out="Figures/Indus"\
+end_year="2021"\
+out="Figures/Indus"
