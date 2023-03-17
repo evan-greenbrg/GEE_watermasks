@@ -1,6 +1,6 @@
 #!/bin/bash
-river='Puquiri_Detail'
-poly="/Volumes/Samsung_T5/Mac/PhD/Projects/Mobility/Deforestation/$river.gpkg"
+river='Indus'
+poly="/Users/greenberg/Documents/PHD/Projects/Mobility/MethodsPaper/RiverData/BraidedRivers/Shapes/$river.gpkg"
 mask_method="Jones"     # Jones, Zou, esa
 dataset='landsat'      # landsat, sentinel
 network_method="grwl"   # grwl, merit, largest, all
@@ -10,8 +10,8 @@ masks="true"    # true, false
 water_level="1"
 start="01-01"   # Month-Day format with leading 0s
 end="12-31"     # Month-Day format with leading 0s
-start_year="1985"   
+start_year="2021"   
 end_year="2021"     
-out="/Volumes/Samsung_T5/Mac/PhD/Projects/Mobility/Deforestation"
+out="/Users/greenberg/Documents/PHD/Writing/MobilityMethods/Figures/Brahm"
 
 python ../GEE_watermasks/main.py --poly $poly --mask_method $mask_method --network_method $network_method --network_path $network_path --masks $masks --images $images --dataset $dataset --water_level $water_level --start $start --end $end --start_year $start_year --end_year $end_year --out $out --river $river
