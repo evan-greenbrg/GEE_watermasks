@@ -1,6 +1,7 @@
 import os
 import ee
 import ee.mapclient
+import numpy as np
 
 # ee.Authenticate()
 ee.Initialize()
@@ -19,7 +20,6 @@ def maskL8sr(image):
     mask = qa.bitwiseAnd(cloudShadowBitMask).eq(0).And(
         qa.bitwiseAnd(cloudsBitMask).eq(0)
     )
-
     return image.updateMask(mask)
 
 
@@ -86,18 +86,14 @@ def get_image(year, polygon, dataset='landsat'):
             maskL8sr
         ).filterDate(
             begin, end
-        ).median().clip(
-            polygon
-        ).select(band_names)
+        ).median().clip(polygon).select(band_names)
     elif dataset == 'sentinel':
         sentinel2 = getSentinelCollection()
         image = sentinel2.map(
             maskSentinel
         ).filterDate(
             begin, end
-        ).median().clip(
-            polygon
-        ).select(band_names)
+        ).median().clip(polygon).select(band_names)
 
     return image
 
@@ -132,7 +128,6 @@ def get_image_period(year, start, end, polygon, dataset='landsat'):
     ).median().clip(
         polygon
     )
-
 
 def request_params(filename, scale, image):
     filename = os.path.abspath(filename)

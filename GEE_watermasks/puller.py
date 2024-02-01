@@ -200,8 +200,13 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
         print()
         print(path)
         ds = rasterio.open(path)
+
+        # replace 0 with nan
+        im = ds.read()
+        nodata = np.argwhere(im[0,:,:] == 0)
+
         if mask_method == 'Jones':
-            water = get_water_Jones(ds, int(water_level)).astype(int)
+            water = get_water_Jones(im, ds.shape, int(water_level)).astype(int)
         elif mask_method == 'Zou':
             water = get_water_Zou(ds).astype(int)
 
@@ -221,10 +226,13 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
         else:
             river_im = water
 
+        river_im = river_im.astype(rasterio.float32)
+        river_im[nodata[:,0], nodata[:,1]] = None
+
         meta = ds.meta
         meta.update({
             'count': 1,
-            'dtype': rasterio.uint8
+            'dtype': rasterio.float32
         })
 
         out = out_path.format(
@@ -236,7 +244,7 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
         )
 
         with rasterio.open(out, 'w', **meta) as dst:
-            dst.write(river_im.astype(rasterio.uint8), 1)
+            dst.write(river_im, 1)
 
     return out
 

@@ -1,46 +1,46 @@
 import numpy as np
 
 
-def Mndwi(ds):
+def Mndwi(im):
     return (
-        (ds.read(3) - ds.read(5))
-        / (ds.read(3) + ds.read(5))
+        (im[3,:,:] - im[5,:,:])
+        / (im[3,:,:] + im[5,:,:])
     )
 
 
-def Mbsrv(ds):
+def Mbsrv(im):
     return (
-        ds.read(3) + ds.read(4)
+        (im[3,:,:] + im[4,:,:])
     )
 
 
-def Mbsrn(ds):
+def Mbsrn(im):
     return (
-        ds.read(6) + ds.read(5)
+        im[6,:,:] + im[6,:,:]
     )
 
 
-def Ndvi(ds):
+def Ndvi(im):
     return (
-        (ds.read(6) - ds.read(4))
-        / (ds.read(6) + ds.read(4))
+        (im[6,:,:] - im[4,:,:])
+        / (im[6,:,:] + im[4,:,:])
     )
 
 
-def Awesh(ds):
+def Awesh(im):
     return (
-        ds.read(2)
-        + (2.5 * ds.read(3))
-        + (-1.5 * Mbsrn(ds))
-        + (-.25 * ds.read(7))
+        im[2,:,:]
+        + (2.5 * im[3,:,:])
+        + (-1.5 * Mbsrn(im))
+        + (-.25 * im[7,:,:])
     )
 
 
-def Evi(ds):
+def Evi(im):
     # calculate the enhanced vegetation index
-    nir = ds.read(6)
-    red = ds.read(3)
-    blue = ds.read(1)
+    nir = im[6,:,:]
+    red = im[3,:,:]
+    blue = im[1,:,:]
 
     return (
         2.5
@@ -49,12 +49,12 @@ def Evi(ds):
     )
 
 
-def get_water_Zou(ds):
-    mndwi = Mndwi(ds)   # mndwi
-    ndvi = Ndvi(ds)     # ndvi
-    evi = Evi(ds)       # evi
+def get_water_Zou(im, shape):
+    mndwi = Mndwi(im)   # mndwi
+    ndvi = Ndvi(im)     # ndvi
+    evi = Evi(im)       # evi
 
-    water = np.zeros(ds.shape)
+    water = np.zeros(shape)
     where = np.where(
         (
             (mndwi > ndvi)
@@ -67,7 +67,7 @@ def get_water_Zou(ds):
     return water
 
 
-def get_water_Jones(ds, water_level):
+def get_water_Jones(im, shape, water_level):
     """
     Based on method from:
     https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/media/files/LSDS-2084_LandsatC2_L3_DSWE_ADD-v1.pdf
@@ -76,22 +76,22 @@ def get_water_Jones(ds, water_level):
     https://github.com/seanyx/RivWidthCloudPaper/blob/master/RivWidthCloud_Python/functions_waterClassification_Jones2019.py
     """
 
-    arr = np.empty((ds.shape[0], ds.shape[1], 9))
-    arr[:, :, 0] = Mndwi(ds)    # mndwi
-    arr[:, :, 1] = Mbsrv(ds)    # mbsrv
-    arr[:, :, 2] = Mbsrn(ds)    # mbsrn
-    arr[:, :, 3] = Ndvi(ds)     # ndvi
-    arr[:, :, 4] = Awesh(ds)    # awesh
-    arr[:, :, 5] = ds.read(5)   # swir1
-    arr[:, :, 6] = ds.read(6)   # nir
-    arr[:, :, 7] = ds.read(2)   # blue
-    arr[:, :, 8] = ds.read(7)   # swir2
+    arr = np.empty((shape[0], shape[1], 9))
+    arr[:, :, 0] = Mndwi(im)    # mndwi
+    arr[:, :, 1] = Mbsrv(im)    # mbsrv
+    arr[:, :, 2] = Mbsrn(im)    # mbsrn
+    arr[:, :, 3] = Ndvi(im)     # ndvi
+    arr[:, :, 4] = Awesh(im)    # awesh
+    arr[:, :, 5] = im[5,:,:]   # swir1
+    arr[:, :, 6] = im[6,:,:]   # nir
+    arr[:, :, 7] = im[2,:,:]   # nir
+    arr[:, :, 8] = im[7,:,:]   # nir
 
     t1 = (arr[:, :, 0] > 0.124).astype(int)
     t2 = arr[:, :, 1] > arr[:, :, 2]
     t3 = arr[:, :, 4] > 0
 
-    t4 = np.zeros(ds.shape)
+    t4 = np.zeros(shape)
     where = np.where(
         (arr[:, :, 0] > -0.44)
         & (arr[:, :, 5] < 900)
@@ -100,7 +100,7 @@ def get_water_Jones(ds, water_level):
     )
     t4[where] = 1
 
-    t5 = np.zeros(ds.shape)
+    t5 = np.zeros(shape)
     where = np.where(
         (arr[:, :, 0] > -0.5)
         & (arr[:, :, 7] < 1000)
