@@ -40,14 +40,19 @@ MONTHS = ['01', '02', '03', '04', '05', '06', '07', '08',
 def pull_esa(polygon_path, root, river, 
              start, end, 
              start_year, end_year, 
-             dataset='landsat'):
+             dataset='esa',
+             mask_method='Jones', 
+             network_method='grwl', 
+             network_path=None):
 
     years = np.arange(start_year, end_year + 1) 
+    print('Splitting into chunks')
     polys = get_polygon(polygon_path, root, dataset)
 
     lon, lat = polys[0].getInfo()['coordinates'][0][0]
     dst_crs = find_epsg(lat, lon)
 
+    # Set up downloading
     print()
     print(river)
     year_root = os.path.join(root, river)
@@ -69,8 +74,26 @@ def pull_esa(polygon_path, root, river,
                     river, i, start, end, dst_crs
                 )
             ))
+
+    # Set up river network
+    if network_method == 'grwl':
+        network, network_method = get_grwl_features(
+            polygon_path,
+            os.path.join(root, river),
+            dataset
+        )
+    elif network_method == 'merit':
+        network, network_method = get_MERIT_features(
+            polygon_path,
+            root,
+            network_path,
+            dataset
+        )
+
+    print('Downloading')
     multiprocess(tasks)
 
+    print('Mosaics')
     out_paths = {}
     for year_i, year in enumerate(years):
         pattern = 'mask'
@@ -91,8 +114,32 @@ def pull_esa(polygon_path, root, river,
         os.rmdir(year_dir)
 
     # use threshold to make mask
+    print('Applying Thresholds and filtering river')
     for year, path in out_paths.items():
+        print(year)
         path = apply_esa_threshold(path)
+
+        # apply river rivers
+        ds = rasterio.open(path)
+        water = ds.read(1)
+        if network_method == 'grwl':
+            river_im = get_river_GRWL(
+                water, ds.transform, ds.crs, network
+            )
+
+        elif network_method == 'merit':
+            river_im = get_river_MERIT(
+                water, ds.transform, network
+            )
+
+        elif network_method == 'largest':
+            river_im = get_river_largest(water)
+
+        else:
+            river_im = water
+
+        with rasterio.open(path, "w", **ds.meta) as dest:
+            dest.write(river_im.astype(rasterio.uint8), 1)
         out_paths[year] = path
 
     return out_paths
@@ -212,7 +259,7 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
 
         if network_method == 'grwl':
             river_im = get_river_GRWL(
-                water, ds.transform, ds.crs, network, out_root
+                water, ds.transform, ds.crs, network
             )
 
         elif network_method == 'merit':

@@ -52,6 +52,11 @@ def main(poly, masks, images, dataset, water_level,
                 river,
                 start,
                 end,
+                int(start_year),
+                int(end_year),
+                mask_method=mask_method,
+                network_method=network_method,
+                network_path=network_path
             )
 
     return True
@@ -88,7 +93,7 @@ if __name__ == '__main__':
                         help='Do you want to export images')
 
     parser.add_argument('--dataset', metavar='dataset', type=str,
-                        choices=['landsat', 'sentinel'],
+                        choices=['landsat', 'sentinel', 'esa'],
                         help='what is the GEE data source')
 
     parser.add_argument('--water_level', metavar='water_level', type=str,
