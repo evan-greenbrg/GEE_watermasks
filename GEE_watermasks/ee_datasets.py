@@ -86,7 +86,10 @@ def get_image(year, polygon, dataset='landsat'):
             maskL8sr
         ).filterDate(
             begin, end
-        ).median().clip(polygon).select(band_names)
+        ).median().clip(
+            polygon
+        ).select(band_names)
+
     elif dataset == 'sentinel':
         sentinel2 = getSentinelCollection()
         image = sentinel2.map(
@@ -143,7 +146,7 @@ def request_params(filename, scale, image):
 
 
 def surface_water_image(year, polygon, start, end):
-    sw = ee.ImageCollection("JRC/GSW1_3/YearlyHistory")
+    sw = ee.ImageCollection("JRC/GSW1_4/YearlyHistory")
 
     begin = str(year) + '-' + start
     end = str(year) + '-' + end

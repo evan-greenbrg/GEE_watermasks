@@ -13,6 +13,7 @@ from skimage.graph import MCP
 from pyproj import Proj, transform
 
 from ee_datasets import get_image
+from ee_datasets import surface_water_image 
 from puller_helpers import get_polygon
 
 
@@ -141,7 +142,10 @@ def get_grwl_features(polygon_path, out_root, dataset, remove=True):
             poly = ee.Geometry.Polygon(
                 feature['geometry']['coordinates']
             )
-    image = get_image(2014, poly)
+    if dataset == 'esa':
+        image = surface_water_image(2014, poly, '01', '12')
+    else:
+        image = get_image(2014, poly)
     bound = image.geometry()
 
     grwl = ee.FeatureCollection(
@@ -172,7 +176,7 @@ def get_grwl_features(polygon_path, out_root, dataset, remove=True):
     return ops.linemerge(MultiLineString(lines)), 'grwl'
 
 
-def get_river_GRWL(water, ds_transform, crs, multi, out_root):
+def get_river_GRWL(water, ds_transform, crs, multi):
 
     inProj = Proj(init='epsg:4326')
     outProj = Proj(crs)

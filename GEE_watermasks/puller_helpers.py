@@ -14,6 +14,7 @@ from pyproj import CRS
 import warnings
 
 from ee_datasets import get_image
+from ee_datasets import surface_water_image 
 from ee_datasets import request_params
 
 
@@ -53,7 +54,7 @@ def split_polygon(shape, nx, ny):
     return result
 
 
-def get_polygon(polygon_path, root, dataset='landsat', year=2018):
+def get_polygon(polygon_path, root, dataset, year=2018):
 
     out_path = os.path.join(
         root,
@@ -61,10 +62,10 @@ def get_polygon(polygon_path, root, dataset='landsat', year=2018):
     )
 
     # Get image resolution
-    if dataset == 'landsat':
-        reso = 30
-    elif dataset == 'sentinel':
+    if dataset == 'sentinel':
         reso = 10
+    else:
+        reso = 30
 
     # Load initial polygon
     polygon_name = polygon_path.split('/')[-1].split('.')[0]
@@ -75,7 +76,10 @@ def get_polygon(polygon_path, root, dataset='landsat', year=2018):
             poly_shape = Polygon(geom['coordinates'][0])
             poly = ee.Geometry.Polygon(geom['coordinates'])
 
-            image = get_image(year, poly, dataset)
+            if dataset == 'landsat' or dataset == 'sentinel':
+                image = get_image(year, poly, dataset)
+            else:
+                image = surface_water_image(year, poly, '01-30', '12-31')
 
             params = request_params(out_path, reso, image)
 
@@ -105,7 +109,11 @@ def get_polygon(polygon_path, root, dataset='landsat', year=2018):
                     ).tolist()
                     poly = ee.Geometry.Polygon(coordinates)
 
-                    image = get_image(year, poly, dataset)
+
+                    if dataset == 'landsat' or dataset == 'sentinel':
+                        image = get_image(year, poly, dataset)
+                    else:
+                        image = surface_water_image(year, poly, '01', '12')
                     params = request_params(out_path, reso, image)
 
                     try:
