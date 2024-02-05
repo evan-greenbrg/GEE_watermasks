@@ -37,15 +37,12 @@ MONTHS = ['01', '02', '03', '04', '05', '06', '07', '08',
           '09', '10', '11', '12']
 
 
-def pull_esa(polygon_path, root, river, 
-             start, end, 
-             start_year, end_year, 
+def pull_esa(polygon_path, root, river, pairs,
              dataset='esa',
              mask_method='Jones', 
              network_method='grwl', 
              network_path=None):
 
-    years = np.arange(start_year, end_year + 1) 
     print('Splitting into chunks')
     polys = get_polygon(polygon_path, root, dataset)
 
@@ -59,12 +56,11 @@ def pull_esa(polygon_path, root, river,
     os.makedirs(year_root, exist_ok=True)
 
     tasks = []
-    for j, year in enumerate(years):
-        os.makedirs(
-            os.path.join(
-                year_root, str(year),
-            ), exist_ok=True
+    for j, (start, end) in enumerate(pairs):
+        year_root = os.path.join(
+            year_root, start.replace('-', '_'),
         )
+        os.makedirs(year_root, exist_ok=True)
 
         for i, poly in enumerate(polys):
             tasks.append((
@@ -95,27 +91,32 @@ def pull_esa(polygon_path, root, river,
 
     print('Mosaics')
     out_paths = {}
-    for year_i, year in enumerate(years):
+    for year_i, (start, end) in enumerate(pairs):
         pattern = 'mask'
+
+        start_text = start.replace('-', '_')
+        year_root = os.path.join(
+            year_root, start_text
+        )
         out_fp = mosaic_images(
-            year_root, year, river, pattern, start, end
+            year_root, river, pattern, start, end
         )
 
         if not out_fp:
             continue
 
-        out_paths[year] = out_fp
+        out_paths[start_text + '_' + end_text] = out_fp
 
         year_dir = os.path.join(
             root,
             river,
-            str(year)
+            start_text
         )
         os.rmdir(year_dir)
 
     # use threshold to make mask
     print('Applying Thresholds and filtering river')
-    for year, path in out_paths.items():
+    for time_text, path in out_paths.items():
         print(year)
         path = apply_esa_threshold(path)
 
@@ -140,7 +141,8 @@ def pull_esa(polygon_path, root, river,
 
         with rasterio.open(path, "w", **ds.meta) as dest:
             dest.write(river_im.astype(rasterio.uint8), 1)
-        out_paths[year] = path
+
+        out_paths[time_text] = path
 
     return out_paths
 
@@ -175,7 +177,7 @@ def pull_year_ESA(year, poly, root, name, chunk_i, start, end, dst_crs):
     return out
 
 
-def pull_year_image(year, poly, root, name, chunk_i, 
+def pull_year_image(poly, root, name, chunk_i, 
                     start, end, dataset, dst_crs):
     # See if pausing helpds with the time outs
     time.sleep(6)
@@ -188,18 +190,18 @@ def pull_year_image(year, poly, root, name, chunk_i,
 
     out_path = os.path.join(
         root,
-        str(year),
-        '{}_{}_{}.tif'
+        '{}_{}.tif'
     )
-    image = get_image_period(year, start, end, poly, dataset)
+    image = get_image_period(start, end, poly, dataset)
 
     if not image.bandNames().getInfo():
         return None
 
+    start_text = start.replace('-', '_')
+    end_text = end.replace('-', '_')
     out = out_path.format(
         name,
-        year,
-        f'{start}_{end}_image_chunk_{chunk_i}'
+        f'{start_text}_{end_text}_image_chunk_{chunk_i}'
     )
 
     _ = ee_export_image(
@@ -213,8 +215,9 @@ def pull_year_image(year, poly, root, name, chunk_i,
     return out
 
 
-def create_mask(paths, polygon_path, root, river, start, end, dataset, water_level,
-                mask_method='Jones', network_method='grwl', network_path=None):
+def create_mask(paths, polygon_path, root, river, dataset, water_level, 
+                dtype='int', mask_method='Jones', network_method='grwl', 
+                network_path=None):
 
     # Set up file writing roots
     out_root = os.path.join(
@@ -226,7 +229,7 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
 
     out_path = os.path.join(
         out_root,
-        '{}_{}_{}_{}_{}.tif'
+        '{}_{}_{}.tif'
     )
 
     if network_method == 'grwl':
@@ -243,7 +246,7 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
             dataset
         )
 
-    for year, path in paths.items():
+    for time_text, path in paths.items():
         print()
         print(path)
         ds = rasterio.open(path)
@@ -273,20 +276,25 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
         else:
             river_im = water
 
-        river_im = river_im.astype(rasterio.float32)
-        river_im[nodata[:,0], nodata[:,1]] = None
-
         meta = ds.meta
-        meta.update({
-            'count': 1,
-            'dtype': rasterio.float32
-        })
+        if dtype=='float':
+            river_im = river_im.astype(rasterio.float32)
+            river_im[nodata[:,0], nodata[:,1]] = None
+
+            meta.update({
+                'count': 1,
+                'dtype': rasterio.float32
+            })
+        else:
+            river_im = river_im.astype(rasterio.uint8)
+            meta.update({
+                'count': 1,
+                'dtype': rasterio.uint8
+            })
 
         out = out_path.format(
             river,
-            year,
-            start,
-            end,
+            time_text,
             'mask'
         )
 
@@ -296,15 +304,12 @@ def create_mask(paths, polygon_path, root, river, start, end, dataset, water_lev
     return out
 
 
-def pull_images(polygon_path, root, river, 
-                start, end, 
-                start_year, end_year,
-                dataset):
+def pull_images(polygon_path, root, river, pairs, dataset):
 
-    if (start_year < 2017) and (dataset == 'sentinel'):
+    earliest_year = int(pairs[0][0].split('-')[0])
+    if (earliest_year < 2017) and (dataset == 'sentinel'):
         raise ValueError('Sentinel does not have data before 2017')
     
-    years = np.arange(start_year, end_year + 1)
     polys = get_polygon(polygon_path, root, dataset)
 
     # Get EPSG
@@ -312,22 +317,21 @@ def pull_images(polygon_path, root, river,
     dst_crs = find_epsg(lat, lon)
 
     # Pull the images
-    year_root = os.path.join(root, river)
-    os.makedirs(year_root, exist_ok=True)
+    river_root = os.path.join(root, river)
+    os.makedirs(river_root, exist_ok=True)
 
     tasks = []
-    for year_i, year in enumerate(years):
+    for year_i, (start, end) in enumerate(pairs):
         for poly_i, poly in enumerate(polys):
-            os.makedirs(
-                os.path.join(
-                    year_root, str(year),
-                ), exist_ok=True
+            year_root = os.path.join(
+                river_root, start.replace('-', '_'),
             )
+            os.makedirs(year_root, exist_ok=True)
 
             tasks.append((
                 pull_year_image,
                 (
-                    year, poly, year_root, river, poly_i,
+                    poly, year_root, river, poly_i,
                     start, end, dataset, dst_crs
                 )
             ))
@@ -335,23 +339,23 @@ def pull_images(polygon_path, root, river,
 
     # Mosaic all the images
     out_paths = {}
-    for year_i, year in enumerate(years):
+    for year_i, (start, end) in enumerate(pairs):
+        start_text = start.replace('-', '_')
+        end_text = end.replace('-', '_')
         pattern = 'image'
+        year_root = os.path.join(
+            river_root, start_text,
+        )
         out_fp = mosaic_images(
-            year_root, year, river, pattern, start, end
+            year_root, river_root, river, pattern, start, end
         )
 
         if not out_fp:
             continue
 
-        out_paths[year] = out_fp
+        out_paths[start_text + '_' + end_text] = out_fp
 
-        year_dir = os.path.join(
-            root,
-            river,
-            str(year)
-        )
-        os.rmdir(year_dir)
+        os.rmdir(year_root)
 
     return out_paths
 

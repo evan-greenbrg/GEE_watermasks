@@ -7,11 +7,16 @@ from puller import pull_images
 from puller import create_mask
 from puller import pull_esa
 from puller import get_paths
+from puller_helpers import get_time_pairs
 
 
 def main(poly, masks, images, dataset, water_level,
-         mask_method, network_method, network_path,
+         dtype, mask_method, network_method, network_path,
          start, end, start_year, end_year, out, river):
+
+    # divide time ranges into pairs
+    time_pairs = get_time_pairs(start, end, start_year, end_year)
+    # Need to propogate this throughout the pipeline
 
     export_images = False
     if images == 'true':
@@ -20,10 +25,7 @@ def main(poly, masks, images, dataset, water_level,
             poly,
             out,
             river,
-            start,
-            end,
-            int(start_year),
-            int(end_year),
+            time_pairs,
             dataset
         )
     else:
@@ -37,10 +39,9 @@ def main(poly, masks, images, dataset, water_level,
                 poly,
                 out,
                 river,
-                start,
-                end,
                 dataset,
                 water_level,
+                dtype=dtype,
                 mask_method=mask_method,
                 network_method=network_method,
                 network_path=network_path
@@ -50,10 +51,7 @@ def main(poly, masks, images, dataset, water_level,
                 poly,
                 out,
                 river,
-                start,
-                end,
-                int(start_year),
-                int(end_year),
+                time_pairs,
                 mask_method=mask_method,
                 network_method=network_method,
                 network_path=network_path
@@ -96,6 +94,10 @@ if __name__ == '__main__':
                         choices=['landsat', 'sentinel', 'esa'],
                         help='what is the GEE data source')
 
+    parser.add_argument('--dtype', metavar='dtype', type=str,
+                        choices=['int', 'float'], default='int',
+                        help='Datatype of the output masks')
+
     parser.add_argument('--water_level', metavar='water_level', type=str,
                         choices=['1', '2', '3', '4'], default='2',
                         help='Maximuim water uncertainty (4 being the lowest)')
@@ -130,6 +132,7 @@ if __name__ == '__main__':
         args.images, 
         args.dataset,
         args.water_level, 
+        args.dtype,
         args.mask_method, 
         args.network_method,
         args.network_path,
