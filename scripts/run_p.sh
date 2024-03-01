@@ -1,6 +1,6 @@
 #!/bin/bash
-river='Red'
-poly="/home/greenberg/ExtraSpace/PhD/Projects/Dams/DataArchive/RiverDatabase/Red/$river.gpkg"
+river='Tallahatchie'
+poly="/home/greenberg/ExtraSpace/PhD/Projects/Dams/DataArchive/RiverDatabase/Tallahatchie/$river.gpkg"
 mask_method="Jones"     # Jones, Zou, esa
 dataset='landsat'      # landsat, sentinel
 network_method="grwl"   # grwl, merit, largest, all
@@ -9,10 +9,10 @@ images="true"   # true, false
 masks="true"    # true, false
 dtype="int"    # int, float 
 water_level="3"
-start="10-01"   # Month-Day format with leading 0s
-end="03-31"     # Month-Day format with leading 0s
-start_year="1985"
+start="01-01"   # Month-Day format with leading 0s
+end="12-31"     # Month-Day format with leading 0s
+start_year="1985"   
 end_year="2022"    
-out="/home/greenberg/ExtraSpace/PhD/Projects/Dams/DataArchive/RiverDatabase/Red"
+out="/home/greenberg/ExtraSpace/PhD/Projects/Dams/DataArchive/RiverDatabase/Tallahatchie"
 
 python ../GEE_watermasks/main.py --poly $poly --mask_method $mask_method --network_method $network_method --network_path $network_path --masks $masks --images $images --dataset $dataset --dtype $dtype --water_level $water_level --start $start --end $end --start_year $start_year --end_year $end_year --out $out --river $river
