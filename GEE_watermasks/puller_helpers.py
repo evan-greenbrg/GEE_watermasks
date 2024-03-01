@@ -72,7 +72,6 @@ def get_polygon(polygon_path, root, dataset, year=2018):
     polygon_name = polygon_path.split('/')[-1].split('.')[0]
     with fiona.open(polygon_path, layer=polygon_name) as layer:
         for feature in layer:
-            print(feature)
             geom = feature['geometry']
             poly_shape = Polygon(geom['coordinates'][0])
             poly = ee.Geometry.Polygon(geom['coordinates'])
@@ -94,7 +93,6 @@ def get_polygon(polygon_path, root, dataset, year=2018):
                 return [poly]
 
             except:
-                print('Bad outcome')
                 outcomes.append(False)
 
             nx = 2

@@ -84,8 +84,8 @@ def get_water_Jones(im, shape, water_level):
     arr[:, :, 4] = Awesh(im)    # awesh
     arr[:, :, 5] = im[5,:,:]   # swir1
     arr[:, :, 6] = im[6,:,:]   # nir
-    arr[:, :, 7] = im[2,:,:]   # nir
-    arr[:, :, 8] = im[7,:,:]   # nir
+    arr[:, :, 7] = im[1,:,:]   # green 
+    arr[:, :, 8] = im[7,:,:]   # swir2 
 
     t1 = (arr[:, :, 0] > 0.124).astype(int)
     t2 = arr[:, :, 1] > arr[:, :, 2]
@@ -94,8 +94,10 @@ def get_water_Jones(im, shape, water_level):
     t4 = np.zeros(shape)
     where = np.where(
         (arr[:, :, 0] > -0.44)
-        & (arr[:, :, 5] < 900)
-        & (arr[:, :, 6] < 1500)
+        #& (arr[:, :, 5] < 900)
+        & (arr[:, :, 5] < .09)
+        #& (arr[:, :, 6] < 1500)
+        & (arr[:, :, 6] < .15)
         & (arr[:, :, 3] < 0.7)
     )
     t4[where] = 1
@@ -103,10 +105,14 @@ def get_water_Jones(im, shape, water_level):
     t5 = np.zeros(shape)
     where = np.where(
         (arr[:, :, 0] > -0.5)
-        & (arr[:, :, 7] < 1000)
-        & (arr[:, :, 5] < 3000)
-        & (arr[:, :, 8] < 1000)
-        & (arr[:, :, 6] < 2500)
+        & (arr[:, :, 7] < .1)
+        & (arr[:, :, 5] < .3)
+        & (arr[:, :, 8] < .1)
+        & (arr[:, :, 6] < .25)
+        # & (arr[:, :, 7] < 1000)
+        # & (arr[:, :, 5] < 3000)
+        # & (arr[:, :, 8] < 1000)
+        # & (arr[:, :, 6] < 2500)
     )
     t5[where] = 1
 
