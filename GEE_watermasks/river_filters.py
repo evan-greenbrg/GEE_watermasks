@@ -12,7 +12,7 @@ from shapely import ops
 from skimage.graph import MCP
 from pyproj import Proj, transform
 
-from ee_datasets import get_image
+from ee_datasets import get_image_period
 from ee_datasets import surface_water_image 
 from puller_helpers import get_polygon
 
@@ -145,7 +145,7 @@ def get_grwl_features(polygon_path, out_root, dataset, remove=True):
     if dataset == 'esa':
         image = surface_water_image(2014, poly, '01', '12')
     else:
-        image = get_image(2014, poly)
+        image = get_image_period('2014-01-01', '2014-12-31', poly)
     bound = image.geometry()
 
     grwl = ee.FeatureCollection(

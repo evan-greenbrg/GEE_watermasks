@@ -70,40 +70,7 @@ def getLandsatCollection():
     return(merged)
 
 
-def get_image(year, polygon, dataset='landsat'):
-    """
-    Set up server-side image object
-    """
-    # Get begining and end
-    begin = str(year) + '-01' + '-01'
-    end = str(year) + '-12' + '-31'
-
-    band_names = ['uBlue', 'Blue', 'Green', 'Red', 'Swir1', 'Nir', 'Swir2']
-
-    if dataset == 'landsat':
-        allLandsat = getLandsatCollection()
-        image = allLandsat.map(
-            maskL8sr
-        ).filterDate(
-            begin, end
-        ).median().clip(
-            polygon
-        ).select(band_names)
-
-    elif dataset == 'sentinel':
-        sentinel2 = getSentinelCollection()
-        image = sentinel2.map(
-            maskSentinel
-        ).filterDate(
-            begin, end
-        ).median().clip(polygon).select(band_names)
-
-    return image
-
-
-def get_image_period(year, start, end, polygon, dataset='landsat'):
-    begin = str(year) + '-' + start
-    end = str(year) + '-' + end
+def get_image_period(start, end, polygon, dataset='landsat'):
 
     images = ee.List([])
     if dataset == 'landsat':
@@ -111,7 +78,7 @@ def get_image_period(year, start, end, polygon, dataset='landsat'):
         images = images.add(allLandsat.map(
             maskL8sr
         ).filterDate(
-            begin, end
+            start, end 
         ).median().clip(
             polygon
         ))
@@ -121,7 +88,7 @@ def get_image_period(year, start, end, polygon, dataset='landsat'):
         images = images.add(sentinel2.map(
             maskSentinel 
         ).filterDate(
-            begin, end
+            start, end
         ).median().clip(
             polygon
         ))
@@ -148,11 +115,8 @@ def request_params(filename, scale, image):
 def surface_water_image(year, polygon, start, end):
     sw = ee.ImageCollection("JRC/GSW1_4/YearlyHistory")
 
-    begin = str(year) + '-' + start
-    end = str(year) + '-' + end
-
     return sw.filterDate(
-        begin, end
+        start, end
     ).median().clip(
         polygon
     )

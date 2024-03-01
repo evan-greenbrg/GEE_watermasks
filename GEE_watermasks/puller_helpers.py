@@ -12,8 +12,9 @@ from rasterio.merge import merge
 import numpy as np
 from pyproj import CRS
 import warnings
+from datetime import datetime
 
-from ee_datasets import get_image
+from ee_datasets import get_image_period
 from ee_datasets import surface_water_image 
 from ee_datasets import request_params
 
@@ -77,7 +78,10 @@ def get_polygon(polygon_path, root, dataset, year=2018):
             poly = ee.Geometry.Polygon(geom['coordinates'])
 
             if dataset == 'landsat' or dataset == 'sentinel':
-                image = get_image(year, poly, dataset)
+                image = get_image_period(
+                    '2018-01-30', '2018-12-31', 
+                    poly, dataset
+                )
             else:
                 image = surface_water_image(year, poly, '01-30', '12-31')
 
@@ -90,6 +94,7 @@ def get_polygon(polygon_path, root, dataset, year=2018):
                 return [poly]
 
             except:
+                print('Bad outcome')
                 outcomes.append(False)
 
             nx = 2
@@ -111,7 +116,10 @@ def get_polygon(polygon_path, root, dataset, year=2018):
 
 
                     if dataset == 'landsat' or dataset == 'sentinel':
-                        image = get_image(year, poly, dataset)
+                        image = get_image_period(
+                            '2018-01-30', '2018-12-31', 
+                            poly, dataset
+                        )
                     else:
                         image = surface_water_image(year, poly, '01', '12')
                     params = request_params(out_path, reso, image)
@@ -136,11 +144,11 @@ def get_polygon(polygon_path, root, dataset, year=2018):
         return polys
 
 
-def mosaic_images(year_root, year, river, pattern, start, end):
+def mosaic_images(year_root, river_root, river, pattern, start, end):
     pattern_format = '*{}_chunk_*.tif'.format(pattern)
     # Mosaic Masks
     fps = glob.glob(os.path.join(
-        year_root, str(year), pattern_format
+        year_root, pattern_format
     ))
     if not fps:
         return None
@@ -161,16 +169,18 @@ def mosaic_images(year_root, year, river, pattern, start, end):
     })
 
     out_root = os.path.join(
-        year_root,
+        river_root,
         f'{pattern}'
     )
     os.makedirs(out_root, exist_ok=True)
 
     out_path = os.path.join(
         out_root,
-        '{}_{}_{}_{}_{}.tif'
+        '{}_{}_{}_{}.tif'
     )
-    out_fp = out_path.format(river, year, start, end, f'full_{pattern}')
+    start_text = start.replace('-', '_')
+    end_text = end.replace('-', '_')
+    out_fp = out_path.format(river, start_text, end_text, f'full_{pattern}')
 
     with rasterio.open(out_fp, "w", **meta) as dest:
         dest.write(mosaic)
@@ -246,3 +256,28 @@ def find_epsg(lat, long):
     })
 
     return crs.to_authority()
+
+
+def get_time_pairs(start, end, start_year, end_year):
+
+    start_year = int(start_year)
+    end_year = int(end_year)
+
+    start_dt = datetime.strptime(f'{start_year}-' + start, '%Y-%m-%d')
+    end_dt = datetime.strptime(f'{start_year}-' + end, '%Y-%m-%d')
+
+    if start_dt < end_dt:
+        start_years = [i for i in range(start_year, end_year + 1)]
+        end_years = [i for i in range(start_year, end_year + 1)]
+        # Divide normally. Moth range should fit within a single year
+    else:
+        start_years = [i for i in range(start_year, end_year + 1)]
+        end_years = [i for i in range(start_year + 1, end_year + 1)]
+
+    pairs = []
+    for sy, ey in zip(start_years, end_years):
+        pairs.append((f'{sy}-' + start, f'{ey}-' + end))
+
+    return pairs
+
+
