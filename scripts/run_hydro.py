@@ -15,8 +15,8 @@ if __name__ == '__main__':
     if platform.system() == "Darwin":
         set_start_method('spawn')
 
-    river='RedHydro'
-    poly="/home/greenberg/ExtraSpace/PhD/Projects/Dams/DataArchive/RiverDatabase/Red/Hydro/RedHydro.gpkg"
+    river='ArkansasHydro'
+    poly="/home/greenberg/ExtraSpace/PhD/Projects/Dams/DataArchive/RiverDatabase/Arkansas_one/Hydro/ArkansasHydro.gpkg"
     mask_method="Jones"     # Jones, Zou, esa
     dataset='landsat'      # landsat, sentinel
     network_method="grwl"   # grwl, merit, largest, all
@@ -29,7 +29,7 @@ if __name__ == '__main__':
     end="12-31"     # Month-Day format with leading 0s
     start_year="1985"   
     end_year="2021"     
-    out="/home/greenberg/ExtraSpace/PhD/Projects/Dams/DataArchive/RiverDatabase/Red/Hydro"
+    out="/home/greenberg/ExtraSpace/PhD/Projects/Dams/DataArchive/RiverDatabase/Arkansas_one/Hydro"
 
     starts = ['01-01', '02-01', '03-01', '04-01', '05-01', '06-01',
         '07-01', '08-01', '09-01', '10-01', '11-01', '12-01']

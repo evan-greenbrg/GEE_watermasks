@@ -3,42 +3,42 @@ import numpy as np
 
 def Mndwi(im):
     return (
-        (im[3,:,:] - im[5,:,:])
-        / (im[3,:,:] + im[5,:,:])
+        (im[2,:,:] - im[5,:,:])
+        / (im[2,:,:] + im[5,:,:])
     )
 
 
 def Mbsrv(im):
     return (
-        (im[3,:,:] + im[4,:,:])
+        (im[2,:,:] + im[3,:,:])
     )
 
 
 def Mbsrn(im):
     return (
-        im[6,:,:] + im[6,:,:]
+        im[4,:,:] + im[5,:,:]
     )
 
 
 def Ndvi(im):
     return (
-        (im[6,:,:] - im[4,:,:])
-        / (im[6,:,:] + im[4,:,:])
+        (im[4,:,:] - im[3,:,:])
+        / (im[4,:,:] + im[3,:,:])
     )
 
 
 def Awesh(im):
     return (
-        im[2,:,:]
-        + (2.5 * im[3,:,:])
+        im[1,:,:]
+        + (2.5 * im[2,:,:])
         + (-1.5 * Mbsrn(im))
-        + (-.25 * im[7,:,:])
+        + (-.25 * im[6,:,:])
     )
 
 
 def Evi(im):
     # calculate the enhanced vegetation index
-    nir = im[6,:,:]
+    nir = im[5,:,:]
     red = im[3,:,:]
     blue = im[1,:,:]
 
@@ -83,9 +83,9 @@ def get_water_Jones(im, shape, water_level):
     arr[:, :, 3] = Ndvi(im)     # ndvi
     arr[:, :, 4] = Awesh(im)    # awesh
     arr[:, :, 5] = im[5,:,:]   # swir1
-    arr[:, :, 6] = im[6,:,:]   # nir
-    arr[:, :, 7] = im[1,:,:]   # green 
-    arr[:, :, 8] = im[7,:,:]   # swir2 
+    arr[:, :, 6] = im[4,:,:]   # nir
+    arr[:, :, 7] = im[2,:,:]   # green 
+    arr[:, :, 8] = im[6,:,:]   # swir2 
 
     t1 = (arr[:, :, 0] > 0.124).astype(int)
     t2 = arr[:, :, 1] > arr[:, :, 2]

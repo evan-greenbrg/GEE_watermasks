@@ -320,7 +320,7 @@ def pull_images(polygon_path, root, river, pairs, dataset):
     river_root = os.path.join(root, river)
     os.makedirs(river_root, exist_ok=True)
 
-    print('Made it')
+    print('Downloading Chunks')
     tasks = []
     for year_i, (start, end) in enumerate(pairs):
         for poly_i, poly in enumerate(polys):
